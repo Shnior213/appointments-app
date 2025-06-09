@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,22 +9,21 @@ export default function ProfileScreen() {
   const navigation = useNavigation();
   // User state
   const [user, setUser] = useState(null);
-  const [appointments, setAppointments] = useState([
-    { id: 1, date: '2025-06-10T10:00:00', staff: 'Dana' },
-    { id: 2, date: '2025-06-06T14:00:00', staff: 'Avi' },
-  ]);
+  const [appointments, setAppointments] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  useEffect(() => {
-    fetch(`${BASE_URL}/api/user`)
-      .then(res => res.json())
-      .then(data => setUser(data))
-      .catch(err => console.error('Failed to load user:', err));
-  }, []);
-
   if (!user) {
-    return <Text>Loading...</Text>;
+    return (
+      <View style={styles.centerContainer}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color="#e85d04" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
+          <Text style={styles.buttonText}>התחבר</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   const handleSave = () => {
@@ -174,6 +173,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff7f0',
     padding: 20,
     justifyContent: 'center',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff7f0',
+  },
+  button: {
+    backgroundColor: '#ff8c42',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   backButton: {
     position: 'absolute',

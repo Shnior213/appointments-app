@@ -4,10 +4,10 @@ const jwt = require("jsonwebtoken");
 
 const registerUser = async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, password, phone } = req.body;
 
         // בדיקה אם המשתמש כבר קיים
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({ phone });
         if (existingUser) {
             return res.status(400).json({ message: "User already exists" });
         }
@@ -18,7 +18,7 @@ const registerUser = async (req, res) => {
         // יצירת משתמש חדש
         const newUser = new User({
             name,
-            email,
+            phone,
             password: hashedPassword,
         });
 
@@ -34,10 +34,10 @@ const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // חיפוש המשתמש לפי מייל
-        const user = await User.findOne({ email });
+        // חיפוש המשתמש לפי פלפון
+        const user = await User.findOne({ phone });
         if (!user) {
-            return res.status(400).json({ message: "Invalid email or password" });
+            return res.status(400).json({ message: "Invalid phone or password" });
         }
 
         // השוואת סיסמה
@@ -56,7 +56,6 @@ const loginUser = async (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                email: user.email,
                 isAdmin: user.isAdmin,
             },
         });

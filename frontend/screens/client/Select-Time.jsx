@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, Platform, TouchableOpacity, Image, ScrollView } from 'react-native';
-// import { Picker } from '@react-native-picker/picker';
+import { useEffect } from 'react';
+import { View, Text, StyleSheet, Alert, TouchableOpacity, Image, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,8 +11,17 @@ export default function SelectTimeScreen({ route }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
   const [selectedTime, setSelectedTime] = useState(null);
-  const [availableTimes, setAvailableTimes] = useState(['09:00', '10:00', '11:00', '14:00', '15:00']);
+  const [availableTimes, setAvailableTimes] = useState([]);
   const [selectedTreatment, setSelectedTreatment] = useState('');
+
+useEffect(() => {
+  // Fake available times for demo
+  setAvailableTimes([
+    '10:00 AM', '10:30 AM', '11:00 AM',
+    '11:30 AM', '12:00 PM', '12:30 PM',
+    '1:00 PM', '1:30 PM', '2:00 PM',
+  ]);
+}, [selectedDate]);
 
   return (
     <View style={styles.container}>
@@ -26,15 +35,11 @@ export default function SelectTimeScreen({ route }) {
         />
       </View>
       <Text style={styles.title}>Book with {staff.name}</Text>
-      <TouchableOpacity
-        style={styles.viewProfileButton}
-        onPress={() => navigation.navigate('StaffProfile', { staff })}
-      >
-        <Text style={styles.viewProfileButtonText}>View Full Profile</Text>
-      </TouchableOpacity>
+      
       <Text style={styles.subtitle}>Select Treatment</Text>
+
       <View style={styles.treatmentOptions}>
-        {['Haircut', 'Shave', 'Hair Color'].map((treatment) => (
+        {['Haircut', 'Shave', 'Hair Color', 'Beard' , 'Scissors'].map((treatment) => (
           <TouchableOpacity
             key={treatment}
             style={[
@@ -75,8 +80,10 @@ export default function SelectTimeScreen({ route }) {
       <Text style={styles.selectedDate}>Selected: {selectedDate.toDateString()}</Text>
 
       <Text style={styles.subtitle}>Available Times</Text>
+
       <View style={styles.timesContainer}>
         {availableTimes.map(time => (
+
           <TouchableOpacity
             key={time}
             style={[
@@ -87,6 +94,7 @@ export default function SelectTimeScreen({ route }) {
           >
             <Text style={styles.timeButtonText}>{time}</Text>
           </TouchableOpacity>
+
         ))}
       </View>
       <TouchableOpacity
@@ -107,16 +115,6 @@ export default function SelectTimeScreen({ route }) {
       >
         <Text style={styles.confirmButtonText}>Confirm Appointment</Text>
       </TouchableOpacity>
-      <Text style={styles.subtitle}>Gallery</Text>
-      <ScrollView horizontal style={styles.galleryContainer}>
-        {[1, 2, 3].map((_, index) => (
-          <Image
-            key={index}
-            source={{ uri: 'https://via.placeholder.com/150' }}
-            style={styles.galleryImage}
-          />
-        ))}
-      </ScrollView>
     </View>
   );
 }

@@ -25,14 +25,14 @@ export default function SetWorkHoursScreen() {
   };
 
   const handleSave = () => {
-    // כאן אפשר לחבר ל-API
     console.log('Saved hours:', hours);
   };
 
   return (
     <ScrollView style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={28} color="#e85d04" />
+        <Ionicons name="arrow-back" size={20} color="#e85d04" />
+        <Text style={styles.backText}></Text>
       </TouchableOpacity>
       <Text style={styles.title}>Set Work Hours</Text>
       <Text style={styles.subtitle}>Set opening and closing hours for each day:</Text>
@@ -82,9 +82,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
     padding: 8,
     marginBottom: 10,
+  },
+  backText: {
+    color: '#e85d04',
+    fontSize: 16,
+    marginLeft: 5,
   },
   dayContainer: {
     marginBottom: 15,

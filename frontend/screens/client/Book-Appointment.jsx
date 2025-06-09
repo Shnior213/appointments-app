@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-import API from '../../utils/api';
 
 export default function BookAppointmentScreen() {
   const navigation = useNavigation();
@@ -12,15 +11,19 @@ export default function BookAppointmentScreen() {
   const [staffMembers, setStaffMembers] = useState([]);
 
   useEffect(() => {
-    const fetchStaff = async () => {
-      try {
-        const response = await API.get('/staff');
-        setStaffMembers(response.data);
-      } catch (error) {
-        console.error('Failed to load staff:', error);
-      }
-    };
-    fetchStaff();
+    const sampleStaff = [
+      {
+        id: '1',
+        name: 'Lemal Yamal',
+        image: 'https://img.a.transfermarkt.technology/portrait/big/937958-1746563945.jpg?lm=1',
+      },
+      {
+        id: '2',
+        name: 'Lionel Messi',
+        image: 'https://images.mykhel.com/webp/images/football/players/4/19054.jpg?v=4',
+      },
+    ];
+    setStaffMembers(sampleStaff);
   }, []);
 
   return (
@@ -85,15 +88,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+    width: 140,
   },
   staffImage: {
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
     borderRadius: 50,
     marginBottom: 10,
   },
   staffName: {
     fontSize: 16,
     color: '#333',
+    textAlign: 'center',
   },
 });

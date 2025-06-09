@@ -9,12 +9,7 @@ export default function AdminDashboardScreen({ navigation }) {
           <Ionicons name="arrow-back" size={28} color="#e85d04" />
           <Text style={styles.backText}></Text>
         </TouchableOpacity>
-      <Text style={styles.title}>Welcome, Admin</Text>
-      <Text style={styles.subtitle}>Here you can manage everything</Text>
-
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('EditBusiness')}>
-        <Text style={styles.buttonText}>📝 Edit Business Info</Text>
-      </TouchableOpacity>
+      <Text style={styles.title}>Admin Dashboard</Text>
 
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('SetWorkHours')}>
         <Text style={styles.buttonText}>🕒 Set Work Hours</Text>
@@ -28,9 +23,6 @@ export default function AdminDashboardScreen({ navigation }) {
         <Text style={styles.buttonText}>👥 Manage Team</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ManageGallery')}>
-        <Text style={styles.buttonText}>🖼️ Manage Gallery</Text>
-      </TouchableOpacity>
     </View>
   );
 }

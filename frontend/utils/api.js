@@ -1,9 +1,9 @@
 import axios from 'axios';
+import { BASE_URL } from './constants';
 
 const API = axios.create({
-  baseURL: 'http://192.168.1.34:3001/api',
+  baseURL: {BASE_URL},
 });
 
-// אפשר להוסיף כאן Interceptors בעתיד לטוקנים
 
 export default API;

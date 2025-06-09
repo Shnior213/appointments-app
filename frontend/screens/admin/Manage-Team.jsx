@@ -3,15 +3,16 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, TextInput } 
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { BASE_URL } from '../../utils/constants';
 
 export default function ManageTeamScreen() {
   const navigation = useNavigation();
   const [team, setTeam] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [newMember, setNewMember] = useState({ name: '', role: '', profileImage: '', gallery: [] });
+  const [newMember, setNewMember] = useState({ name: '', role: '', profileImage: ''});
 
   useEffect(() => {
-    axios.get('http://localhost:3001/api/staff')
+    axios.get(`${BASE_URL}/staff`)
       .then(res => setTeam(res.data))
       .catch(err => console.error('Failed to fetch staff:', err));
   }, []);
@@ -27,7 +28,7 @@ export default function ManageTeamScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await axios.delete(`http://localhost:3001/api/staff/${id}`);
+              await axios.delete(`${BASE_URL}/staff/${id}`);
               setTeam(prev => prev.filter(member => member._id !== id));
             } catch (err) {
               console.error('Failed to delete:', err);
@@ -53,7 +54,7 @@ export default function ManageTeamScreen() {
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={28} color="#e85d04" />
+          <Ionicons name="arrow-back" size={24} color="#e85d04" />
           <Text style={styles.backText}></Text>
         </TouchableOpacity>
       <Text style={styles.title}>Manage Team</Text>
@@ -91,7 +92,7 @@ export default function ManageTeamScreen() {
             style={styles.saveButton}
             onPress={async () => {
               try {
-                const res = await axios.post('http://localhost:3001/api/staff', newMember);
+                const res = await axios.post(`${BASE_URL}/staff`, newMember);
                 setTeam([...team, res.data]);
                 setNewMember({ name: '', role: '', profileImage: '', gallery: [] });
                 setShowModal(false);
@@ -109,6 +110,16 @@ export default function ManageTeamScreen() {
 }
 
 const styles = StyleSheet.create({
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  backText: {
+    fontSize: 16,
+    color: '#e85d04',
+    marginLeft: 5,
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff7f0',

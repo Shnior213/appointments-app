@@ -1,46 +1,43 @@
-
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import API from '../utils/api';
+import { Ionicons } from '@expo/vector-icons';
+import { ADMIN_USER, CLIENT_USER } from '../utils/constants';
+
 
 export default function LoginScreen({ navigation }) {
-  const [id, setId] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [userType, setUserType] = useState('');
 
-  const handleLogin = async () => {
-    if (!id || !password) {
-      Alert.alert('Error', 'Please enter both ID and password');
-      return;
+  useEffect(() => {
+    if (userType === 'admin') {
+      navigation.navigate('Login');
     }
+  }, [userType]);
 
-    try {
-      const response = await API.post('/auth/login', {
-        phone: id,
-        password
-      });
-
-      if (response.status === 200) {
-        Alert.alert('Success', 'Logged in successfully');
-        // ניתן לשמור את פרטי המשתמש כאן
-        navigation.navigate('Home');
-      } else {
-        Alert.alert('Error', 'Login failed');
-      }
-    } catch (error) {
-      Alert.alert('Error', error.response?.data?.message || 'Login failed');
+  const handleLogin = () => {
+    // דוגמה לבדיקה בסיסית לפי טלפון/סיסמה
+    if (phone === `${ADMIN_USER.phone}` && password === `${ADMIN_USER.password}`) {
+      navigation.navigate('AdminDashboard');
+    } else if (phone === `${CLIENT_USER.phone}` && password === `${CLIENT_USER.password}`) {
+      navigation.navigate('Home');
+    } else {
+      Alert.alert('Error', 'Invalid credentials');
     }
   };
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={24} color="#e85d04" />
+      </TouchableOpacity>
       <Text style={styles.header}>Login</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="ID"
-        value={id}
-        onChangeText={setId}
+        placeholder="Phone Number"
+        value={phone}
+        onChangeText={setPhone}
       />
       <TextInput
         style={styles.input}
@@ -50,13 +47,16 @@ export default function LoginScreen({ navigation }) {
         onChangeText={setPassword}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+      
+
+      <TouchableOpacity style={styles.button} onPress={(handleLogin)}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-        <Text style={styles.link}>Don't have an account? Register</Text>
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Register')}>
+        <Text style={styles.buttonText}>Register</Text>
       </TouchableOpacity>
+
     </View>
   );
 }
@@ -67,6 +67,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff7f0',
     justifyContent: 'center',
     padding: 20,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 1,
   },
   header: {
     fontSize: 28,

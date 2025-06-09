@@ -3,18 +3,16 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
-import HomeScreen from './screens/HomeScreen';
-import BookAppointmentScreen from './screens/client/BookAppointmentScreen';
-import SelectTimeScreen from './screens/client/SelectTimeScreen';
-import ProfileScreen from './screens/client/ProfileScreen';
-import AdminDashboardScreen from './screens/admin/AdminDashboardScreen';
-import ManageAppointmentsScreen from './screens/admin/ManageAppointmentsScreen';
-import EditBusinessInfoScreen from './screens/admin/EditBusinessInfoScreen';
-import ManageGalleryScreen from './screens/admin/ManageGalleryScreen';
-import ManageTeamScreen from './screens/admin/ManageTeamScreen';
-import SetWorkHoursScreen from './screens/admin/SetWorkHoursScreen';
-import LoginScreen from './screens/LoginScreen';
-import RegisterScreen from './screens/RegisterScreen';
+import HomeScreen from './screens/Home-Screen';
+import BookAppointmentScreen from './screens/client/Book-Appointment';
+import SelectTimeScreen from './screens/client/Select-Time';
+import ProfileScreen from './screens/client/Profile';
+import AdminDashboardScreen from './screens/admin/Admin-Dashboard';
+import ManageAppointmentsScreen from './screens/admin/Manage-Appointments';
+import ManageTeamScreen from './screens/admin/Manage-Team';
+import SetWorkHoursScreen from './screens/admin/Set-Work-Hours';
+import LoginScreen from './screens/Login-Screen';
+import RegisterScreen from './screens/Register-Screen';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,11 +28,8 @@ export default function App() {
             <Stack.Screen name="BookAppointment" component={BookAppointmentScreen} />
             <Stack.Screen name="SelectTime" component={SelectTimeScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
-            <Stack.Screen name="UserProfile" component={ProfileScreen} />
             <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
             <Stack.Screen name="ManageAppointments" component={ManageAppointmentsScreen} />
-            <Stack.Screen name="EditBusiness" component={EditBusinessInfoScreen} />
-            <Stack.Screen name="ManageGallery" component={ManageGalleryScreen} />
             <Stack.Screen name="ManageTeam" component={ManageTeamScreen} />
             <Stack.Screen name="SetWorkHours" component={SetWorkHoursScreen} />
           </Stack.Navigator>

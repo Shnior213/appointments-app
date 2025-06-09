@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { BASE_URL } from '../../utils/constants';
 
 export default function ManageAppointmentsScreen() {
   const navigation = useNavigation();
@@ -9,7 +10,7 @@ export default function ManageAppointmentsScreen() {
   const [appointments, setAppointments] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/appointments')
+    fetch(BASE_URL)
       .then(res => res.json())
       .then(data => setAppointments(data))
       .catch(err => console.error('Failed to fetch appointments:', err));
@@ -25,7 +26,7 @@ export default function ManageAppointmentsScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            fetch(`http://localhost:3001/api/appointments/${id}`, {
+            fetch(`${BASE_URL}${id}`, {
               method: 'DELETE',
             })
               .then(() => {
@@ -53,12 +54,14 @@ export default function ManageAppointmentsScreen() {
 
   return (
     <View style={styles.container}>
+
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color="#e85d04" />
           <Text style={styles.backText}></Text>
         </TouchableOpacity>
       </View>
+      
       <Text style={styles.title}>Manage Appointments</Text>
       <FlatList
         data={appointments}
@@ -116,10 +119,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  backButton: {
+backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    marginBottom: 10,
   },
   backText: {
     fontSize: 18,
