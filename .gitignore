@@ -1,9 +1,55 @@
+#################################################
+# ROOT .gitignore for the whole project
+# (both backend and frontend)
+#################################################
+
+# Dependencies
 node_modules/
-.env
+
+# Build outputs
+dist/
+build/
+web-build/
+
+# Expo (React-Native)
 .expo/
+expo-env.d.ts
+
+# Native artifacts
 android/
 ios/
-build/
-dist/
+.kotlin/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro cache
+.metro-health-check*
+
+# macOS
 .DS_Store
 
+# Debug logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+*.pem
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Patch/orig leftovers
+*.orig.*
+
+#################################################
+# END
+#################################################
+.DS_Store
+backend/seed-manager.js

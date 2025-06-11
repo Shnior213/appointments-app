@@ -1,30 +1,34 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const dotenv = require("dotenv");
-const cors = require("cors");
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const connectDB = require('./config/db');
 
-dotenv.config();
+const authRoutes = require('./routes/auth');
+const managerRoutes = require('./routes/managers');
+const hoursRoutes = require('./routes/workHours');
+const appointmentRoutes = require('./routes/appointments');
+
+console.log('🟢 server.js loaded');
 
 const app = express();
+
+app.get('/ping', (req, res) => res.send('pong'));
+
+
+app.use((req, res, next) => {
+    console.log('➡️', req.method, req.originalUrl);
+    next();
+});
 
 app.use(cors());
 app.use(express.json());
 
-const authRoutes = require("./routes/authRoutes");
-const appointmentRoutes = require("./routes/appointmentRoutes");
+connectDB();
 
-app.use("/api/auth", authRoutes);
-app.use("/api/appointments", appointmentRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/managers', managerRoutes);
+app.use('/api/work-hours', hoursRoutes);
+app.use('/api/appointments', appointmentRoutes);
 
-// Routes (נוסיף אחר כך)
-app.get("/", (req, res) => {
-    res.send("API is running...");
-});
-
-const connect = require("./config/mongoDB");
-connect();
-
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 5050;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

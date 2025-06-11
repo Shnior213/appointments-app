@@ -1,76 +1,59 @@
-const Appointment = require("../models/Appointment");
+const Appointment = require('../models/Appointment');
+const Manager = require('../models/Manager');
 
-const createAppointment = async (req, res) => {
-    try {
-        const { title, date, time, description } = req.body;
-        const userId = req.user.id;
 
-        const appointment = new Appointment({
-            user: userId,
-            title,
-            date,
-            time,
-            description,
-        });
-
-        await appointment.save();
-        res.status(201).json(appointment);
-    } catch (error) {
-        res.status(500).json({ message: "Failed to create appointment", error: error.message });
-    }
+exports.list = async (req, res) => {
+    let filter;
+    if (req.user.isManager) {
+        // נמצא את מסמך ה-Manager ששייך למשתמש המחובר
+        const mgr = await Manager.findOne({ user: req.user.id }, '_id');
+        if (!mgr) return res.json([]);            // אין מסמך מנהל – מחזירים ריק
+        filter = { manager: mgr._id };
+    } else {
+        filter = { client: req.user.id };
+    } const list = await Appointment.find(filter)
+        .populate('client', 'name phone')
+        .populate({ path: 'manager', populate: { path: 'user', select: 'name imageUrl' } });
+    res.json(list);
 };
 
+exports.create = async (req, res) => {
+    console.log('🔥 create appointment, body =', req.body);
 
-const getAppointments = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const appointments = await Appointment.find({ user: userId });
-        res.json(appointments);
-    } catch (error) {
-        res.status(500).json({ message: "Failed to get appointments", error: error.message });
-    }
+    const { managerId, dateTime, serviceType } = req.body;
+    const appointment = await Appointment.create({ client: req.user.id, manager: managerId, dateTime, serviceType });
+    res.status(201).json(appointment);
 };
 
-const updateAppointment = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { date, description } = req.body;
-        const userId = req.user.id;
-
-        const appointment = await Appointment.findOne({ _id: id, user: userId });
-        if (!appointment) {
-            return res.status(404).json({ message: "Appointment not found" });
-        }
-
-        appointment.date = date || appointment.date;
-        appointment.description = description || appointment.description;
-
-        await appointment.save();
-        res.json(appointment);
-    } catch (error) {
-        res.status(500).json({ message: "Failed to update appointment", error: error.message });
+exports.update = async (req, res) => {
+    const { id } = req.params;
+    // אם המשתמש מנהל – צריך להשיג את managerId שלו
+    let managerFilter = null;
+    if (req.user.isManager) {
+        const mgr = await Manager.findOne({ user: req.user.id }, '_id');
+        if (mgr) managerFilter = mgr._id;
     }
+
+    const updated = await Appointment.findOneAndUpdate(
+        { _id: id, $or: [{ client: req.user.id }, { manager: managerFilter }] },
+
+        req.body,
+        { new: true }
+    );
+    if (!updated) return res.status(404).json({ message: 'תור לא נמצא' });
+    res.json(updated);
 };
 
-const deleteAppointment = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const userId = req.user.id;
-
-        const appointment = await Appointment.findOneAndDelete({ _id: id, user: userId });
-        if (!appointment) {
-            return res.status(404).json({ message: "Appointment not found" });
-        }
-
-        res.json({ message: "Appointment deleted successfully" });
-    } catch (error) {
-        res.status(500).json({ message: "Failed to delete appointment", error: error.message });
+exports.delete = async (req, res) => {
+    const { id } = req.params;
+    let managerFilter = null;
+    if (req.user.isManager) {
+        const mgr = await Manager.findOne({ user: req.user.id }, '_id');
+        if (mgr) managerFilter = mgr._id;
     }
-};
-
-module.exports = {
-    createAppointment,
-    getAppointments,
-    updateAppointment,
-    deleteAppointment,
+    const removed = await Appointment.findOneAndDelete(
+        { _id: id, $or: [{ client: req.user.id }, { manager: managerFilter }] }
+    );
+    if (!removed) return res.status(404).json({ message: 'תור לא נמצא' });
+    res.json({ message: 'התור בוטל' });
 };
