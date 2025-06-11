@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
-import axios from 'axios';
+import API from '../../utils/api'
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { BASE_URL } from '../../utils/constants';
@@ -9,10 +9,10 @@ export default function ManageTeamScreen() {
   const navigation = useNavigation();
   const [team, setTeam] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [newMember, setNewMember] = useState({ name: '', role: '', profileImage: ''});
+  const [newMember, setNewMember] = useState({ name: '', phone: '', password: '', profileImage: ''});
 
   useEffect(() => {
-    axios.get(`${BASE_URL}/staff`)
+    API.get(`${BASE_URL}/staff`)
       .then(res => setTeam(res.data))
       .catch(err => console.error('Failed to fetch staff:', err));
   }, []);
@@ -28,7 +28,7 @@ export default function ManageTeamScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await axios.delete(`${BASE_URL}/staff/${id}`);
+              await API.delete(`${BASE_URL}/staff/:${id}`);
               setTeam(prev => prev.filter(member => member._id !== id));
             } catch (err) {
               console.error('Failed to delete:', err);
@@ -78,15 +78,18 @@ export default function ManageTeamScreen() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Role"
-            value={newMember.role}
-            onChangeText={(text) => setNewMember({ ...newMember, role: text })}
+            placeholder="phone"
+            value={newMember.phone}
+            onChangeText={(text) => setNewMember({ ...newMember, phone: text })}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="password"
+            value={newMember.password}
+            onChangeText={(text) => setNewMember({ ...newMember, password: text })}
           />
           <TouchableOpacity style={styles.imagePicker}>
-            <Text style={styles.imagePickerText}>Upload Profile Image</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.imagePicker}>
-            <Text style={styles.imagePickerText}>Upload Gallery Images</Text>
+            <Text style={styles.imagePickerText}>Upload Profile Picture</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.saveButton}
@@ -94,7 +97,7 @@ export default function ManageTeamScreen() {
               try {
                 const res = await axios.post(`${BASE_URL}/staff`, newMember);
                 setTeam([...team, res.data]);
-                setNewMember({ name: '', role: '', profileImage: '', gallery: [] });
+                setNewMember({ name: '', phone: '',password: '' , profileImage: ''});
                 setShowModal(false);
               } catch (err) {
                 console.error('Failed to add member:', err);

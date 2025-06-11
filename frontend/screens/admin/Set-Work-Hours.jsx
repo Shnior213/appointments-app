@@ -31,7 +31,7 @@ export default function SetWorkHoursScreen() {
   return (
     <ScrollView style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={20} color="#e85d04" />
+        <Ionicons name="arrow-back" size={28} color="#e85d04" />
         <Text style={styles.backText}></Text>
       </TouchableOpacity>
       <Text style={styles.title}>Set Work Hours</Text>

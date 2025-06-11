@@ -1,42 +1,21 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ADMIN_USER, CLIENT_USER } from "../utils/constants";
 import API from "../utils/api";
 
 export default function LoginScreen({ navigation }) {
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [userType, setUserType] = useState("");
 
-  useEffect(() => {
-    if (userType === "admin") {
-      navigation.navigate("Login");
-    }
-  }, [userType]);
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    // דוגמה לבדיקה בסיסית לפי טלפון/סיסמה
-    if (
-      phone === `${ADMIN_USER.phone}` &&
-      password === `${ADMIN_USER.password}`
-    ) {
-      navigation.navigate("AdminDashboard");
-    } else if (
-      phone === `${CLIENT_USER.phone}` &&
-      password === `${CLIENT_USER.password}`
-    ) {
-      navigation.navigate("Home");
-    } else {
-      Alert.alert("Error", "Invalid credentials");
+    if (phone === `${ADMIN_USER.phone}` && password === `${ADMIN_USER.password}`) {
+      navigation.navigate('AdminDashboard');
+    } else if (phone === `${CLIENT_USER.phone}` && password === `${CLIENT_USER.password}`) {
+      navigation.navigate('Home');
     }
+
   };
 
   return (
@@ -116,11 +95,5 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
-  },
-  link: {
-    color: "#e85d04",
-    textAlign: "center",
-    marginTop: 15,
-    textDecorationLine: "underline",
-  },
-});
+  }
+})

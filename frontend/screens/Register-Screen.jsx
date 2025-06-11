@@ -2,24 +2,16 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [birthDate, setBirthDate] = useState('');
   const [password, setPassword] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const navigation = useNavigation();
 
   const handleRegister = () => {
-    if (!name || !phone || !birthDate || !password) {
+    if (!name || !phone || !password) {
       Alert.alert('Error', 'Please fill all fields');
-      return;
-    }
-    const nameRegex = /^[A-Za-zא-ת\s]+$/;
-    if (!nameRegex.test(name)) {
-      Alert.alert('Invalid Name', 'Name must not contain numbers or special characters');
       return;
     }
 
@@ -49,16 +41,6 @@ export default function RegisterScreen() {
         onChangeText={setPhone}
         keyboardType="phone-pad"
       />
-      <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-        <View pointerEvents="none">
-          <TextInput
-            placeholder="Birth Date"
-            style={{ color: birthDate ? '#000' : '#999' }}
-            value={birthDate}
-            editable={false}
-          />
-        </View>
-      </TouchableOpacity>
       <TextInput
         style={styles.input}
         placeholder="Password"
@@ -66,24 +48,6 @@ export default function RegisterScreen() {
         value={password}
         onChangeText={setPassword}
       />
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={new Date()}
-          mode="date"
-          display="default"
-          maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
-          onChange={(event, selectedDate) => {
-            setShowDatePicker(false);
-            if (selectedDate) {
-              const day = selectedDate.getDate().toString().padStart(2, '0');
-              const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
-              const year = selectedDate.getFullYear();
-              setBirthDate(`${day}/${month}/${year}`);
-            }
-          }}
-        />
-      )}
 
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Register</Text>

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -7,11 +6,10 @@ import { BASE_URL } from '../../utils/constants';
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
-  // User state
+
   const [user, setUser] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
   if (!user) {
     return (
@@ -20,7 +18,7 @@ export default function ProfileScreen() {
           <Ionicons name="arrow-back" size={24} color="#e85d04" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.buttonText}>התחבר</Text>
+          <Text style={styles.buttonText}>Log in</Text>
         </TouchableOpacity>
       </View>
     );
@@ -30,12 +28,6 @@ export default function ProfileScreen() {
     const nameRegex = /^[A-Za-z\s]+$/;
     if (!user.name || !nameRegex.test(user.name)) {
       Alert.alert('Invalid Name', 'Please enter a valid name without numbers.');
-      return;
-    }
-
-    const date = new Date(user.birthDate);
-    if (isNaN(date.getTime())) {
-      Alert.alert('Invalid Birth Date', 'Please enter a valid birth date (e.g. 2000-01-01).');
       return;
     }
 
@@ -72,30 +64,6 @@ export default function ProfileScreen() {
             />
           </View>
 
-          <View style={styles.infoBox}>
-            <Text style={styles.label}>Birth Date:</Text>
-            <TouchableOpacity
-              style={styles.input}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Text>{user.birthDate}</Text>
-            </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                value={new Date(user.birthDate)}
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setShowDatePicker(false);
-                  if (selectedDate) {
-                    const isoDate = selectedDate.toISOString().split('T')[0];
-                    setUser({ ...user, birthDate: isoDate });
-                  }
-                }}
-              />
-            )}
-          </View>
-
           <TouchableOpacity
             style={styles.saveButton}
             onPress={handleSave}
@@ -115,10 +83,6 @@ export default function ProfileScreen() {
             <Text style={styles.value}>{user.phone}</Text>
           </View>
 
-          <View style={styles.infoBox}>
-            <Text style={styles.label}>Birth Date:</Text>
-            <Text style={styles.value}>{user.birthDate}</Text>
-          </View>
         </>
       )}
 
