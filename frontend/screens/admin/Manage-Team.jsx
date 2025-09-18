@@ -1,21 +1,65 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, TextInput, Image } from 'react-native';
 import API from '../../utils/api'
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { BASE_URL } from '../../utils/constants';
+import { BASE_URL } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ManageTeamScreen() {
   const navigation = useNavigation();
   const [team, setTeam] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [newMember, setNewMember] = useState({ name: '', phone: '', password: '', profileImage: ''});
+  const [users, setUsers] = useState([]);
+  // const [newMember, setNewMember] = useState({ name: '', phone: '', password: '', profileImage: ''});
+  const [user, setUser] = useState(null);
+
+// Move fetchManagers outside useEffect so it can be called elsewhere
+const fetchManagers = async () => {
+  try {
+    const [managersRes, usersRes] = await Promise.all([
+      API.get('/api/managers'),
+      API.get('/api/auth/users'),
+    ]);
+
+    // const managerUserIds = managersRes.data.map(manager => manager.user._id || manager.user);
+    // const managers = usersRes.data.filter(user => managerUserIds.includes(user._id));
+
+    const managers = managersRes.data.map(manager => {
+      const user = usersRes.data.find(user => user._id === (manager.user._id || manager.user));
+      return {
+        ...user,
+        managerId: manager._id,
+      };
+    });
+
+    setTeam(managers);
+  } catch (err) {
+    console.error('Failed to fetch staff:', err);
+  }
+};
+
+useEffect(() => {
+  fetchManagers();
+}, []);
 
   useEffect(() => {
-    API.get(`${BASE_URL}/staff`)
-      .then(res => setTeam(res.data))
-      .catch(err => console.error('Failed to fetch staff:', err));
-  }, []);
+    const fetchUsers = async () => {
+      if (showModal) {
+        try {
+          const res = await API.get('/api/auth/users');
+          // Filter out users who are already managers
+          const managerUserIds = team.map(manager => manager._id);
+          const nonManagers = res.data.filter(user => !managerUserIds.includes(user._id));
+          setUsers(nonManagers);
+        } catch (err) {
+          console.error('Failed to fetch users:', err);
+        }
+      }
+    };
+
+    fetchUsers();
+  }, [showModal]);
 
   const handleDelete = (id) => {
     Alert.alert(
@@ -28,7 +72,7 @@ export default function ManageTeamScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await API.delete(`${BASE_URL}/staff/:${id}`);
+              await API.delete(`/api/managers/${id}`);
               setTeam(prev => prev.filter(member => member._id !== id));
             } catch (err) {
               console.error('Failed to delete:', err);
@@ -41,9 +85,12 @@ export default function ManageTeamScreen() {
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
-      <View>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.role}>{item.role}</Text>
+      <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <Image source={{ uri: item.profileImage }} style={styles.avatar} />
+        <View>
+          <Text style={styles.name}>{item.name}</Text>
+          <Text style={styles.role}>manager</Text>
+        </View>
       </View>
       <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item._id)}>
         <Text style={styles.deleteText}>Remove</Text>
@@ -65,46 +112,42 @@ export default function ManageTeamScreen() {
         data={team}
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={{ ...styles.list, flexGrow: 1 }}
       />
       {showModal && (
         <View style={styles.modal}>
-          <Text style={styles.modalTitle}>New Team Member</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Name"
-            value={newMember.name}
-            onChangeText={(text) => setNewMember({ ...newMember, name: text })}
+          <Text style={styles.modalTitle}>Select User to Promote</Text>
+          <FlatList
+            data={users}
+            keyExtractor={(item) => item._id}
+            renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={async () => {
+                const alreadyManager = team.some(manager => manager._id === item._id || manager.user === item._id);
+                if (alreadyManager) {
+                  Alert.alert('Already a Manager', 'This user is already a manager.');
+                  return;
+                }
+                try {
+                  const res = await API.post('/api/managers', { userId: item._id });
+                  await fetchManagers();
+                  setShowModal(false);
+                } catch (err) {
+                  console.error('Failed to promote user:', err);
+                }
+              }}
+            >
+                <Text style={styles.name}>{item.name}</Text>
+                <Text style={styles.role}>{item.phone}</Text>
+              </TouchableOpacity>
+            )}
           />
-          <TextInput
-            style={styles.input}
-            placeholder="phone"
-            value={newMember.phone}
-            onChangeText={(text) => setNewMember({ ...newMember, phone: text })}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="password"
-            value={newMember.password}
-            onChangeText={(text) => setNewMember({ ...newMember, password: text })}
-          />
-          <TouchableOpacity style={styles.imagePicker}>
-            <Text style={styles.imagePickerText}>Upload Profile Picture</Text>
-          </TouchableOpacity>
           <TouchableOpacity
-            style={styles.saveButton}
-            onPress={async () => {
-              try {
-                const res = await axios.post(`${BASE_URL}/staff`, newMember);
-                setTeam([...team, res.data]);
-                setNewMember({ name: '', phone: '',password: '' , profileImage: ''});
-                setShowModal(false);
-              } catch (err) {
-                console.error('Failed to add member:', err);
-              }
-            }}
+            style={[styles.saveButton, { backgroundColor: '#ccc', marginTop: 10 }]}
+            onPress={() => setShowModal(false)}
           >
-            <Text style={styles.saveButtonText}>Save</Text>
+            <Text style={styles.saveButtonText}>Cancel</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -148,7 +191,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   list: {
-    paddingBottom: 20,
+    flexGrow: 1,
+    paddingBottom: 100,
   },
   card: {
     backgroundColor: '#ffe5d0',
@@ -158,6 +202,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 10,
   },
   name: {
     fontSize: 18,

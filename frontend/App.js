@@ -18,23 +18,23 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff7f0' }} edges={['top', 'right', 'left']}>
-        <NavigationContainer>
-          <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-            <Stack.Screen name="BookAppointment" component={BookAppointmentScreen} />
-            <Stack.Screen name="SelectTime" component={SelectTimeScreen} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
-            <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
-            <Stack.Screen name="ManageAppointments" component={ManageAppointmentsScreen} />
-            <Stack.Screen name="ManageTeam" component={ManageTeamScreen} />
-            <Stack.Screen name="SetWorkHours" component={SetWorkHoursScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </SafeAreaView>
-    </SafeAreaProvider>
+      <SafeAreaProvider>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff7f0' }} edges={['top', 'right', 'left']}>
+          <NavigationContainer>
+            <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="Home" component={HomeScreen} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Register" component={RegisterScreen} />
+              <Stack.Screen name="BookAppointment" component={BookAppointmentScreen} />
+              <Stack.Screen name="SelectTime" component={SelectTimeScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+              <Stack.Screen name="ManageAppointments" component={ManageAppointmentsScreen} />
+              <Stack.Screen name="ManageTeam" component={ManageTeamScreen} />
+              <Stack.Screen name="SetWorkHours" component={SetWorkHoursScreen} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </SafeAreaView>
+      </SafeAreaProvider>
   );
 };

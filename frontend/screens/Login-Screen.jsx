@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { ADMIN_USER, CLIENT_USER } from "../utils/constants";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import API from "../utils/api";
 
 export default function LoginScreen({ navigation }) {
@@ -9,22 +9,29 @@ export default function LoginScreen({ navigation }) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
-    if (phone === `${ADMIN_USER.phone}` && password === `${ADMIN_USER.password}`) {
-      navigation.navigate('AdminDashboard');
-    } else if (phone === `${CLIENT_USER.phone}` && password === `${CLIENT_USER.password}`) {
-      navigation.navigate('Home');
-    }
+  const handleLogin = async () => {
+    try {
+      const res = await API.post('/api/auth/login', { phone, password });
+      const { token, isManager } = res.data;
 
+      await AsyncStorage.setItem('token', token);
+
+      navigation.navigate('Home');
+      
+
+    } catch (err) {
+      console.log('Login error:', err.response?.data || err.message);
+      Alert.alert('Login failed', err.response?.data?.message || 'Unknown error');
+    }
   };
 
   return (
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => navigation.goBack()}
+        onPress={() => navigation.navigate('Home')}
       >
-        <Ionicons name="arrow-back" size={24} color="#e85d04" />
+        <Ionicons name="arrow-back" size={28} color="#e85d04" />
       </TouchableOpacity>
       <Text style={styles.header}>Login</Text>
 

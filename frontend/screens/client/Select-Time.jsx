@@ -1,36 +1,115 @@
-import React, { useState } from 'react';
-import { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, TouchableOpacity, Image, ScrollView } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import API from '../../utils/api'; 
+import { SALON_IMAGE } from '../../utils/constants';
 
 export default function SelectTimeScreen({ route }) {
   const navigation = useNavigation();
   const { staff } = route.params;
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showPicker, setShowPicker] = useState(false);
   const [selectedTime, setSelectedTime] = useState(null);
   const [availableTimes, setAvailableTimes] = useState([]);
   const [selectedTreatment, setSelectedTreatment] = useState('');
+  const [treatments, setTreatments] = useState(["haircut : 60₪", "beard : 40₪" , "Shave : 40₪" , "Haircut + Beard : 70₪"]);
+
+  const [availableDates, setAvailableDates] = useState([]);
+
+  
+  useEffect(() => {
+    const today = new Date();
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const nextDate = new Date(today);
+      nextDate.setDate(today.getDate() + i);
+      dates.push(nextDate);
+    }
+    setAvailableDates(dates);
+  }, []);
 
 useEffect(() => {
-  // Fake available times for demo
-  setAvailableTimes([
-    '10:00 AM', '10:30 AM', '11:00 AM',
-    '11:30 AM', '12:00 PM', '12:30 PM',
-    '1:00 PM', '1:30 PM', '2:00 PM',
-  ]);
-}, [selectedDate]);
+  const fetchAvailability = async () => {
+    try {
+      const res = await API.get(`/api/work-hours/manager/${staff._id}`);
+      const workHours = res.data.times; 
+
+      const selectedDay = selectedDate.getDay(); 
+
+      // console.log('Fetched workHours:', workHours);
+      // console.log('Selected day index:', selectedDay);
+
+      const todayHours = workHours.find(hour => Number(hour.dayOfWeek) === selectedDay);
+      // console.log('Matched todayHours:', todayHours);
+
+      if (!todayHours || !todayHours.from || !todayHours.to) {
+        setAvailableTimes([]);
+        return;
+      }
+
+      const [fromHour, fromMinute] = todayHours.from.split(':').map(Number);
+      const [toHour, toMinute] = todayHours.to.split(':').map(Number);
+
+      const times = [];
+      let currentHour = fromHour;
+      let currentMinute = fromMinute;
+
+      while (currentHour < toHour || (currentHour === toHour && currentMinute < toMinute)) {
+        const hourStr = currentHour.toString().padStart(2, '0');
+        const minStr = currentMinute.toString().padStart(2, '0');
+        times.push(`${hourStr}:${minStr}`);
+
+        currentMinute += 30;
+        if (currentMinute >= 60) {
+          currentMinute = 0;
+          currentHour += 1;
+        }
+      }
+
+      // console.log('Generated available times:', times);
+
+      const now = new Date();
+      const isToday = selectedDate.toDateString() === now.toDateString();
+
+      const filteredTimes = isToday
+        ? times.filter(time => {
+            const [hour, minute] = time.split(':').map(Number);
+            return hour > now.getHours() || (hour === now.getHours() && minute > now.getMinutes());
+          })
+        : times;
+
+      setAvailableTimes(filteredTimes);
+
+      // שלב א: קבל את כל התורים לאותו ספר וליום הנבחר
+      const resAppointments = await API.get(`/api/appointments/manager/${staff._id}?date=${selectedDate.toISOString().split('T')[0]}`);
+      const takenTimes = resAppointments.data.map(appt => {
+        const apptDate = new Date(appt.dateTime);
+        return apptDate.toTimeString().slice(0, 5); // "HH:MM"
+      });
+
+      // שלב ב: סנן את הזמנים שתפוסים
+      const finalAvailableTimes = filteredTimes.filter(time => !takenTimes.includes(time));
+
+      setAvailableTimes(finalAvailableTimes);
+    } catch (err) {
+      console.error('Failed to load availability', err);
+      setAvailableTimes([]);
+    }
+  };
+
+  fetchAvailability();
+}, [selectedDate, staff._id]);
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color="#e85d04" />
       </TouchableOpacity>
       <View style={styles.profileContainer}>
         <Image
-          source={{ uri: staff.image || 'https://via.placeholder.com/100' }}
+          source={{ uri: staff.image || SALON_IMAGE }}
           style={styles.profileImage}
         />
       </View>
@@ -39,7 +118,7 @@ useEffect(() => {
       <Text style={styles.subtitle}>Select Treatment</Text>
 
       <View style={styles.treatmentOptions}>
-        {['Haircut', 'Shave', 'Hair Color', 'Beard' , 'Scissors'].map((treatment) => (
+        {treatments.map((treatment) => (
           <TouchableOpacity
             key={treatment}
             style={[
@@ -60,54 +139,76 @@ useEffect(() => {
         ))}
       </View>
 
-      <TouchableOpacity style={styles.confirmButton} onPress={() => setShowPicker(true)}>
-        <Text style={styles.confirmButtonText}>Choose Date</Text>
-      </TouchableOpacity>
-      {showPicker && (
-        <View style={styles.pickerContainer}>
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display="default"
-            minimumDate={new Date()}
-            onChange={(event, date) => {
-              setShowPicker(false);
-              if (date) setSelectedDate(date);
-            }}
-          />
-        </View>
-      )}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
+        {availableDates.map(date => (
+          <TouchableOpacity
+            key={date.toDateString()}
+            style={[
+              styles.dayButton,
+              selectedDate.toDateString() === date.toDateString() && styles.selectedTimeButton
+            ]}
+            onPress={() => setSelectedDate(date)}
+          >
+            <Text style={styles.dayButtonText}>{date.toDateString().slice(0, 10)}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
       <Text style={styles.selectedDate}>Selected: {selectedDate.toDateString()}</Text>
 
       <Text style={styles.subtitle}>Available Times</Text>
 
       <View style={styles.timesContainer}>
-        {availableTimes.map(time => (
-
-          <TouchableOpacity
-            key={time}
-            style={[
-              styles.timeButton,
-              selectedTime === time && styles.selectedTimeButton
-            ]}
-            onPress={() => setSelectedTime(time)}
-          >
-            <Text style={styles.timeButtonText}>{time}</Text>
-          </TouchableOpacity>
-
-        ))}
+        {availableTimes.length === 0 ? (
+          <View style={styles.closeContainer}>
+            <Text style={styles.closeText}>CLOSE</Text>
+          </View>
+        ) : (
+          availableTimes.map(time => (
+            <TouchableOpacity
+              key={time}
+              style={[
+                styles.timeButton,
+                selectedTime === time && styles.selectedTimeButton
+              ]}
+              onPress={() => setSelectedTime(time)}
+            >
+              <Text style={styles.timeButtonText}>{time}</Text>
+            </TouchableOpacity>
+          ))
+        )}
       </View>
       <TouchableOpacity
         style={styles.confirmButton}
-        onPress={() => {
+        onPress={async () => {
           if (selectedTime && selectedTreatment) {
-            Alert.alert(
-              'Appointment Confirmed',
-              `With ${staff.name}\nDate: ${selectedDate.toDateString()}\nTime: ${selectedTime}\nTreatment: ${selectedTreatment}`
-            );
-            setAvailableTimes(availableTimes.filter(time => time !== selectedTime));
-            setSelectedTime(null);
-            setSelectedTreatment('');
+            console.log('staff:', staff);
+            console.log('staff._id', staff._id);
+
+            try {
+              const token = await AsyncStorage.getItem('token');
+              console.log('📦 token from AsyncStorage:', token);
+
+              await API.post('/api/appointments', {
+                manager: staff._id,
+                dateTime: new Date(`${selectedDate.toISOString().split('T')[0]}T${selectedTime}:00`),
+                serviceType: selectedTreatment,
+              }, {
+                headers: {
+                  Authorization: `Bearer ${token}`
+                }
+              });
+
+              Alert.alert(
+                'Appointment Confirmed',
+                `With ${staff.name}\nDate: ${selectedDate.toDateString()}\nTime: ${selectedTime}\nTreatment: ${selectedTreatment}`
+              );
+              setAvailableTimes(availableTimes.filter(time => time !== selectedTime));
+              setSelectedTime(null);
+              setSelectedTreatment('');
+            } catch (error) {
+              console.error('Failed to create appointment', error);
+              Alert.alert('Error', 'Failed to confirm appointment. Please try again.');
+            }
           } else {
             Alert.alert('Error', 'Please select a treatment and time first');
           }
@@ -115,13 +216,13 @@ useEffect(() => {
       >
         <Text style={styles.confirmButtonText}>Confirm Appointment</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: '#fff7f0',
     paddingVertical: 40,
     paddingHorizontal: 20,
@@ -260,5 +361,32 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     fontSize: 14,
+  },
+  dayButton: {
+    width: 100,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginHorizontal: 5,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  dayButtonText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  closeContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 60,
+    marginVertical: 10,
+  },
+  closeText: {
+    fontSize: 20,
+    color: '#e85d04',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });

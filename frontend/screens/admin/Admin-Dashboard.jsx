@@ -1,8 +1,30 @@
-import React from 'react';
+import jwtDecode from 'jwt-decode';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SUPER_ADMIN_PHONE } from '../../utils/constants';
 
 export default function AdminDashboardScreen({ navigation }) {
+  const [isSuperManager, setIsSuperManager] = useState(false);
+  
+  useEffect(() => {
+    const fetchRole = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          const base64Payload = token.split('.')[1];
+          const decodedPayload = JSON.parse(atob(base64Payload));
+          setIsSuperManager(decodedPayload.phone === SUPER_ADMIN_PHONE);
+        }
+      } catch (err) {
+        console.log('Failed to decode token', err);
+      }
+    };
+
+    fetchRole();
+  }, []);
+
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -19,9 +41,11 @@ export default function AdminDashboardScreen({ navigation }) {
         <Text style={styles.buttonText}>📅 Manage Appointments</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ManageTeam')}>
-        <Text style={styles.buttonText}>👥 Manage Team</Text>
-      </TouchableOpacity>
+      {isSuperManager && (
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ManageTeam')}>
+          <Text style={styles.buttonText}>👥 Manage Team</Text>
+        </TouchableOpacity>
+      )}
 
     </View>
   );

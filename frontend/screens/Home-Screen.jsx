@@ -1,20 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, Linking, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-// icons
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { decode as atob } from 'base-64';
 import InstagramIcon from '../assets/icons/icons8-instagram-50.png';
 import PhoneIcon from '../assets/icons/icons8-phone-50.png';
 import AddressIcon from '../assets/icons/location.png';
-import { ADDRESS_URL, INSTAGRAM_URL, PHONE_URL, SALON_ADDRESS, SALON_BIO, SALON_INSTAGRAM, SALON_NAME, SALON_PHONE } from '../utils/constants';
-import { INSTAGRAM_URL1, ADDRESS_URL1, PHONE_URL1 } from '@env';
+import { SALON_ADDRESS, SALON_BIO, SALON_INSTAGRAM, SALON_NAME, SALON_PHONE ,INSTAGRAM_URL, ADDRESS_URL, PHONE_URL} from '../utils/constants';
 
-export default function ClientHomeScreen() {
+export default function HomeScreen() {
   const navigation = useNavigation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userName, setUserName] = useState();
+  const [isManager, setIsManager] = useState(false);
+
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          const base64Payload = token.split('.')[1];
+          const decodedPayload = JSON.parse(atob(base64Payload));
+          setUserName(decodedPayload.name || 'User');
+          setIsManager(decodedPayload.isManager || false);
+        }
+      } catch (err) {
+        console.log('Failed to decode token', err);
+      }
+    };
+
+    checkLoginStatus();
+  }, []);
 
   const handleProfileNavigation = () => {
     navigation.navigate('Profile');
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   };
 
   return (
@@ -32,6 +58,12 @@ export default function ClientHomeScreen() {
           </TouchableOpacity>
         </View>
 
+        {!menuOpen && (
+          <Text style={styles.greetingText}>
+            {getGreeting()}, {userName || 'Guest'}!
+          </Text>
+        )}
+
         {menuOpen && (
           <View style={styles.sideMenu}>
             <TouchableOpacity onPress={() => navigation.navigate('BookAppointment')} style={{ padding: 10, alignItems: 'center' }}>
@@ -39,6 +71,13 @@ export default function ClientHomeScreen() {
                 <Text style={{ color: '#e85d04', fontWeight: 'bold', fontSize: 16 }}>Book Appointment</Text>
               </View>
             </TouchableOpacity>
+            {isManager && (
+              <TouchableOpacity onPress={() => navigation.navigate('AdminDashboard')} style={{ padding: 10, alignItems: 'center' }}>
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={{ color: '#e85d04', fontWeight: 'bold', fontSize: 16 }}>Admin Dashboard</Text>
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -51,21 +90,21 @@ export default function ClientHomeScreen() {
           <Text style={styles.businessDetailsTitle}>Business Info</Text>
           <View style={styles.iconRow}>
             <View style={styles.iconColumn}>
-              <TouchableOpacity onPress={() => Linking.openURL(INSTAGRAM_URL1)}>
+              <TouchableOpacity onPress={() => Linking.openURL(INSTAGRAM_URL)}>
                 <Image source={InstagramIcon} style={styles.iconImage} />
               </TouchableOpacity>
               <Text style={styles.iconLabel}>{SALON_INSTAGRAM || 'Instagram'}</Text>
             </View>
 
             <View style={styles.iconColumn}>
-              <TouchableOpacity onPress={() => Linking.openURL(ADDRESS_URL1)}>
+              <TouchableOpacity onPress={() => Linking.openURL(ADDRESS_URL)}>
                 <Image source={AddressIcon} style={styles.iconImage} />
               </TouchableOpacity>
               <Text style={styles.iconLabel}>{SALON_ADDRESS || 'Address'}</Text>
             </View>
 
             <View style={styles.iconColumn}>
-              <TouchableOpacity onPress={() => Linking.openURL(PHONE_URL1)}>
+              <TouchableOpacity onPress={() => Linking.openURL(PHONE_URL)}>
                 <Image source={PhoneIcon} style={styles.iconImage} />
               </TouchableOpacity>
               <Text style={styles.iconLabel}>{SALON_PHONE || 'Phone'}</Text>
@@ -108,6 +147,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
+  },
+  greetingText: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginVertical: 10,
+    color: '#e85d04',
+    textAlign: 'center',
   },
   salonHeader: {
     fontSize: 26,

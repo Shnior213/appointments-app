@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import API from '../../utils/api';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 
 export default function SetWorkHoursScreen() {
   const navigation = useNavigation();
@@ -14,6 +16,35 @@ export default function SetWorkHoursScreen() {
     Friday: { open: '', close: '' },
   });
 
+  useEffect(() => {
+    const fetchHours = async () => {
+      try {
+        const res = await API.get('/api/work-hours');
+        const workHours = res.data;
+
+        // Map the response to the hours state format
+        const mappedHours = {};
+        workHours.forEach(({ day, open, close }) => {
+          mappedHours[day] = { open, close };
+        });
+
+        setHours(prev => ({ ...prev, ...mappedHours }));
+      } catch (error) {
+        console.error('Error fetching work hours:', error);
+      }
+    };
+
+    fetchHours();
+  }, []);
+
+  const hourOptions = [
+    '08:00', '08:30', '09:00', '09:30', '10:00',
+    '10:30', '11:00', '11:30', '12:00', '12:30',
+    '13:00', '13:30', '14:00', '14:30', '15:00',
+    '15:30', '16:00', '16:30', '17:00', '17:30',
+    '18:00', '18:30', '19:00', '19:30', '20:00',
+  ];
+
   const handleChange = (day, type, value) => {
     setHours(prev => ({
       ...prev,
@@ -24,8 +55,15 @@ export default function SetWorkHoursScreen() {
     }));
   };
 
-  const handleSave = () => {
-    console.log('Saved hours:', hours);
+  const handleSave = async () => {
+    try {
+      await API.post('/api/work-hours', { hours });
+      console.log('Saved hours:', hours);
+      alert('Work hours saved successfully');
+    } catch (error) {
+      console.error('Error saving work hours:', error);
+      alert('Failed to save work hours');
+    }
   };
 
   return (
@@ -41,18 +79,26 @@ export default function SetWorkHoursScreen() {
         <View key={day} style={styles.dayContainer}>
           <Text style={styles.dayTitle}>{day}</Text>
           <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              placeholder="Open (e.g. 09:00)"
-              value={time.open}
-              onChangeText={text => handleChange(day, 'open', text)}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Close (e.g. 18:00)"
-              value={time.close}
-              onChangeText={text => handleChange(day, 'close', text)}
-            />
+            <Picker
+              selectedValue={time.open}
+              onValueChange={(itemValue) => handleChange(day, 'open', itemValue)}
+              style={styles.picker}
+            >
+              <Picker.Item label="Select open" value="" />
+              {hourOptions.map(hour => (
+                <Picker.Item key={hour} label={hour} value={hour} />
+              ))}
+            </Picker>
+            <Picker
+              selectedValue={time.close}
+              onValueChange={(itemValue) => handleChange(day, 'close', itemValue)}
+              style={styles.picker}
+            >
+              <Picker.Item label="Select close" value="" />
+              {hourOptions.map(hour => (
+                <Picker.Item key={hour} label={hour} value={hour} />
+              ))}
+            </Picker>
           </View>
         </View>
       ))}
@@ -104,6 +150,13 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     gap: 10,
+  },
+  picker: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    marginBottom: 10,
   },
   input: {
     flex: 1,

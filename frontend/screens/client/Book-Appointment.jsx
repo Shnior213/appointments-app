@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import API from '../../utils/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { SALON_IMAGE } from '../../utils/constants';
 
 
 export default function BookAppointmentScreen() {
@@ -10,37 +13,59 @@ export default function BookAppointmentScreen() {
 
   const [staffMembers, setStaffMembers] = useState([]);
 
-  useEffect(() => {
-    const sampleStaff = [
-      {
-        id: '1',
-        name: 'Lemal Yamal',
-        image: 'https://img.a.transfermarkt.technology/portrait/big/937958-1746563945.jpg?lm=1',
-      },
-      {
-        id: '2',
-        name: 'Lionel Messi',
-        image: 'https://images.mykhel.com/webp/images/football/players/4/19054.jpg?v=4',
-      },
-    ];
-    setStaffMembers(sampleStaff);
-  }, []);
+useEffect(() => {
+  const fetchStaff = async () => {
+    try {
+      const [managersRes, usersRes] = await Promise.all([
+        API.get('/api/managers'),
+        API.get('/api/auth/users'),
+      ]);
+
+      const userMap = usersRes.data.reduce((acc, user) => {
+        acc[user._id] = user;
+        return acc;
+      }, {});
+
+      const staffWithDetails = managersRes.data.map(manager => {
+        const user = userMap[manager.user._id || manager.user] || {};
+        return {
+          _id: manager.managerId || manager._id,
+          userId: manager.user._id || manager.user,
+          name: user.name || 'Unknown',
+          image: user.profileImage || '',
+          managerId: manager._id,
+        };
+      });
+
+      setStaffMembers(staffWithDetails);
+    } catch (err) {
+      console.error('Failed to load staff members:', err);
+    }
+  };
+
+  fetchStaff();
+}, []);
 
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={goBack} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color="#e85d04" />
+        <Ionicons name="arrow-back" size={28} color="#e85d04" />
       </TouchableOpacity>
       <Text style={styles.title}>Choose Your Stylist</Text>
       <View style={styles.staffList}>
         {staffMembers.map(member => (
           <TouchableOpacity
-            key={member.id}
+            key={member._id}
             style={styles.staffCard}
-            onPress={() => navigation.navigate('SelectTime', { staff: member })}
+            onPress={() => {
+              console.log('Going to SelectTime with managerId:', member.managerId, 'userId:', member.userId);
+                navigation.navigate('SelectTime', {
+                staff: { _id: member.managerId, name: member.name, image: member.image }
+              });
+            }}
           >
             <Image
-              source={{ uri: member.image }}
+              source={{ uri: member.image || SALON_IMAGE }}
               style={styles.staffImage}
             />
             <Text style={styles.staffName}>{member.name}</Text>

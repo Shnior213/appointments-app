@@ -2,28 +2,47 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import API from '../utils/api';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name || !phone || !password) {
-      Alert.alert('Error', 'Please fill all fields');
+      Alert.alert('שגיאה', 'אנא מלא את כל השדות');
       return;
     }
 
-    Alert.alert('Success', 'Registered successfully');
-    navigation.navigate('Home');
+    setLoading(true);
+    try {
+      const res = await API.post('/api/auth/register', { name, phone, password });
+
+      if (res.status === 201) {
+        Alert.alert('הצלחה', 'נרשמת בהצלחה!');
+        navigation.navigate('Home');
+      }
+    } catch (error) {
+      console.log('Register error:', error?.response?.data || error.message);
+    
+      if (error.response?.status === 400) {
+        Alert.alert('שגיאה', 'המשתמש כבר קיים או שהנתונים שגויים');
+      } else {
+        Alert.alert('שגיאה', 'שגיאה בשרת, נסה שוב מאוחר יותר');
+      }
+    }finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.backButtonContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#e85d04" />
+          <Ionicons name="arrow-back" size={28} color="#e85d04" />
         </TouchableOpacity>
       </View>
       <Text style={styles.header}>Register</Text>
@@ -49,8 +68,10 @@ export default function RegisterScreen() {
         onChangeText={setPassword}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Register</Text>
+      <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
+        <Text style={styles.buttonText}>
+          {loading ? 'Register...' : 'Register'}
+        </Text>
       </TouchableOpacity>
     </View>
   );

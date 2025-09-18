@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { BASE_URL } from '../../utils/constants';
+import { BASE_URL } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { decode as atob } from 'base-64';
+import API from '../../utils/api';
+
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
@@ -11,11 +15,29 @@ export default function ProfileScreen() {
   const [appointments, setAppointments] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
 
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setUser({ name: payload.name, phone: payload.phone });
+          const res = await API.get('/api/appointments/my');
+          setAppointments(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to load user:', err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+
   if (!user) {
     return (
       <View style={styles.centerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#e85d04" />
+          <Ionicons name="arrow-back" size={28} color="#e85d04" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
           <Text style={styles.buttonText}>Log in</Text>
@@ -24,21 +46,38 @@ export default function ProfileScreen() {
     );
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const nameRegex = /^[A-Za-z\s]+$/;
     if (!user.name || !nameRegex.test(user.name)) {
       Alert.alert('Invalid Name', 'Please enter a valid name without numbers.');
       return;
     }
 
-    fetch(`${BASE_URL}/api/user`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(user),
-    })
-      .then(res => res.json())
-      .then(() => setIsEditing(false))
-      .catch(err => console.error('Failed to update user:', err));
+    try {
+      const res = await API.put('/api/auth/user', { name: user.name, phone: user.phone });
+
+      if (res.status === 200) {
+        setIsEditing(false);
+        Alert.alert('Success', 'Profile updated successfully. Please login again.', [
+          {
+            text: 'OK',
+            onPress: async () => {
+              await AsyncStorage.removeItem('token');
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            },
+          },
+        ]);
+      } else {
+        console.error('Update failed:', res.data.message);
+        Alert.alert('Error', res.data.message || 'Failed to update profile.');
+      }
+    } catch (err) {
+      console.error('Failed to update user:', err);
+      Alert.alert('Error', err?.response?.data?.message || 'Network error.');
+    }
   };
 
   return (
@@ -63,12 +102,27 @@ export default function ProfileScreen() {
               onChangeText={(text) => setUser({ ...user, name: text })}
             />
           </View>
+          <View style={styles.infoBox}>
+            <Text style={styles.label}>Phone:</Text>
+            <TextInput
+              style={styles.input}
+              value={user.phone}
+              keyboardType="phone-pad"
+              onChangeText={(text) => setUser({ ...user, phone: text })}
+            />
+          </View>
 
           <TouchableOpacity
             style={styles.saveButton}
             onPress={handleSave}
           >
             <Text style={styles.saveButtonText}>Save Changes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.cancelEditButton}
+            onPress={() => setIsEditing(false)}
+          >
+            <Text style={styles.cancelEditButtonText}>Cancel</Text>
           </TouchableOpacity>
         </>
       ) : (
@@ -88,13 +142,14 @@ export default function ProfileScreen() {
 
       <Text style={styles.sectionTitle}>Your Appointments:</Text>
       {appointments.map((appt) => {
-        const apptDate = new Date(appt.date);
+        console.log('🔎 Appointment date:', appt.dateTime);
+        const apptDate = new Date(appt.dateTime);
         const now = new Date();
         const canCancel = (apptDate - now) / (1000 * 60 * 60 * 24) > 1;
         return (
-          <View key={appt.id} style={styles.appointmentBox}>
+          <View key={appt._id} style={styles.appointmentBox}>
             <Text style={styles.appointmentText}>
-              {apptDate.toLocaleDateString()} at {apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} with {appt.staff}
+              {apptDate.toLocaleDateString()} at {apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} with {appt.manager?.user?.name || 'Unknown'}
             </Text>
             {canCancel && (
               <TouchableOpacity
@@ -107,12 +162,16 @@ export default function ProfileScreen() {
                       { text: 'No', style: 'cancel' },
                       {
                         text: 'Yes',
-                        onPress: () => {
-                          fetch(`${BASE_URL}/api/appointments/${appt.id}`, {
+                        onPress: async () => {
+                          const token = await AsyncStorage.getItem('token');
+                          fetch(`${BASE_URL}/api/appointments/${appt._id}`, {
                             method: 'DELETE',
+                            headers: {
+                              Authorization: `Bearer ${token}`,
+                            },
                           })
                             .then(() => {
-                              setAppointments(appointments.filter(a => a.id !== appt.id));
+                              setAppointments(appointments.filter(a => a._id !== appt._id));
                             })
                             .catch(err => console.error('Failed to cancel appointment:', err));
                         },
@@ -127,7 +186,37 @@ export default function ProfileScreen() {
           </View>
         );
       })}
-    </View>
+
+<TouchableOpacity
+  style={styles.logoutButton}
+  onPress={() => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to log out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('token');
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            } catch (err) {
+              console.error('Logout failed:', err);
+              Alert.alert('Error', 'Failed to log out.');
+            }
+          },
+        },
+      ]
+    );
+  }}
+>
+  <Text style={styles.logoutButtonText}>Logout</Text>
+</TouchableOpacity>
+  </View>
   );
 }
 
@@ -242,5 +331,29 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 1,
     padding: 8,
+  },
+  logoutButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: 'red',
+    borderRadius: 6,
+    alignSelf: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  cancelEditButton: {
+    backgroundColor: '#ccc',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  cancelEditButtonText: {
+    color: '#333',
+    fontWeight: 'bold',
   },
 });
