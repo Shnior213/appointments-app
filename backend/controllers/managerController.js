@@ -23,7 +23,7 @@ exports.create = async (req, res) => {
 // delete manager (demote)
 exports.delete = async (req, res) => {
     const { id } = req.params;
-    const removed = await Manager.findByIdAndDelete(id);
+    const removed = await Manager.findOneAndDelete({ user: id });
     if (!removed) return res.status(404).json({ message: 'מנהל לא נמצא' });
     res.json({ message: 'מנהל הוסר' });
 };

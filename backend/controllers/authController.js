@@ -3,11 +3,34 @@ const Manager = require('../models/Manager');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+const createInitialAdmin = async () => {
+    const adminExists = await User.findOne({ role: 'admin' });
+    if (!adminExists) {
+        const hash = await bcrypt.hash('000', 10);
+        const user = await User.create({
+            name: 'Admin',
+            phone: '000',
+            password: hash,
+            role: 'admin'
+        });
+        await Manager.create({ user: user._id });
+        console.log('Admin user created');
+    }
+};
+// createInitialAdmin(); 
 
+
+// מחזיר את כל המשתמשים
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find();  // תוכל להוסיף select כדי להחזיר רק שדות מסוימים אם תרצה
+    res.send(users);
+  } catch (err) {
+    res.status(500).send({ error: 'Failed to fetch users' });
+  }
+};
 
 exports.register = async (req, res) => {
-    console.log('🟢 authController.register hit, body =', req.body);
-    console.log('req.body =', req.body);
     const { name, phone, password } = req.body;
     try {
         const hash = await bcrypt.hash(password, 10);
@@ -22,14 +45,35 @@ exports.login = async (req, res) => {
     const { phone, password } = req.body;
     try {
         const user = await User.findOne({ phone });
+        // console.log(" user.name = ", user.name);
         if (!user || !await bcrypt.compare(password, user.password)) {
             return res.status(401).json({ message: 'פרטי התחברות שגויים' });
         }
-        const isManager = await Manager.exists({ user: user._id });
-        const payload = { id: user._id, isManager: !!isManager };
+        const managerData = await Manager.findOne({ user: user._id });
+
+        const payload = {
+            id: user._id,
+            name: user.name,
+            isManager: !!managerData,
+            isSuperManager: managerData?.isSuperManager || false,
+            phone: user.phone
+        };
+
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
-        res.json({ token });
+        res.json({ token, isManager: !!managerData, isSuperManager: managerData?.isSuperManager || false });
     } catch (err) {
         res.status(500).json({ message: 'שגיאת שרת בכניסה', error: err });
     }
+};
+
+exports.update = async (req, res) => {
+  const { name , phone} = req.body;
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findByIdAndUpdate(userId, { name, phone }, { new: true });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'שגיאה בעדכון המשתמש', error: err });
+  }
 };

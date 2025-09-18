@@ -18,11 +18,28 @@ exports.list = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-    console.log('🔥 create appointment, body =', req.body);
+    try {
+        console.log('🔥 create appointment, body =', req.body);
+        console.log('req.user =', req.user);
 
-    const { managerId, dateTime, serviceType } = req.body;
-    const appointment = await Appointment.create({ client: req.user.id, manager: managerId, dateTime, serviceType });
-    res.status(201).json(appointment);
+        const { manager, dateTime, serviceType } = req.body;
+
+        const appointmentData = {
+            client: req.user.id,
+            manager,
+            dateTime,
+            serviceType
+        };
+
+        console.log('📥 Appointment data to save:', appointmentData);
+
+        const appointment = await Appointment.create(appointmentData);
+
+        res.status(201).json(appointment);
+    } catch (error) {
+        console.error('❌ Error creating appointment:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
 };
 
 exports.update = async (req, res) => {
@@ -56,4 +73,42 @@ exports.delete = async (req, res) => {
     );
     if (!removed) return res.status(404).json({ message: 'תור לא נמצא' });
     res.json({ message: 'התור בוטל' });
+};
+
+exports.getByManagerAndDate = async (req, res) => {
+    try {
+        const { managerId } = req.params;
+        const { date } = req.query; // פורמט: YYYY-MM-DD
+
+        const from = new Date(date);
+        const to = new Date(date);
+        to.setDate(to.getDate() + 1);
+
+        const appointments = await Appointment.find({
+            manager: managerId,
+            dateTime: { $gte: from, $lt: to }
+        });
+
+        res.json(appointments);
+    } catch (error) {
+        console.error('❌ Failed to fetch appointments by manager and date:', error);
+        res.status(500).json({ message: 'שגיאה בשרת', error: error.message });
+    }
+};
+
+exports.getMyAppointments = async (req, res) => {
+    try {
+        const appointments = await Appointment.find({ client: req.user.id })
+            .populate({
+                path: 'manager',
+                populate: {
+                    path: 'user',
+                    select: 'name imageUrl'
+                }
+            });
+        res.json(appointments);
+    } catch (err) {
+        console.error('❌ Failed to fetch user appointments:', err);
+        res.status(500).json({ message: 'שגיאת שרת בשליפת תורים', error: err.message });
+    }
 };
