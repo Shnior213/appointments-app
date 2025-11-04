@@ -13,7 +13,7 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!name || !phone || !password) {
-      Alert.alert('שגיאה', 'אנא מלא את כל השדות');
+      Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
@@ -22,18 +22,64 @@ export default function RegisterScreen() {
       const res = await API.post('/api/auth/register', { name, phone, password });
 
       if (res.status === 201) {
-        Alert.alert('הצלחה', 'נרשמת בהצלחה!');
-        navigation.navigate('Home');
+        try {
+          await API.post('/api/auth/send-code', { phone });
+        } catch (sendErr) {
+          Alert.alert('Error', 'Failed to send verification code');
+          setLoading(false);
+          return;
+        }
+
+        if (Alert.prompt) {
+          Alert.prompt(
+            'Phone Verification',
+            'Enter the verification code you received via SMS',
+            [
+              {
+                text: 'Confirm',
+                onPress: async (code) => {
+                  if (!code || code.length !== 4) {
+                    Alert.alert('Error', 'Please enter a 4-digit code');
+                    setLoading(false);
+                    return;
+                  }
+                  try {
+                    const verifyRes = await API.post('/api/auth/verify', { phone, code });
+                    if (verifyRes.status === 200) {
+                      Alert.alert('Success', 'Registration and verification completed successfully!', [
+                        { text: 'OK', onPress: () => navigation.navigate('Home') }
+                      ]);
+                    } else {
+                      Alert.alert('Error', 'Incorrect code');
+                    }
+                  } catch (err) {
+                    Alert.alert('Error', 'Incorrect code or server error');
+                  }
+                  setLoading(false);
+                }
+              }
+            ],
+            'plain-text',
+            '',
+            'number-pad'
+          );
+        } else {
+          let inputCode = '';
+          Alert.alert(
+            'Verification Required',
+            'Code input function is not supported on this device. Please contact support.'
+          );
+          setLoading(false);
+        }
       }
     } catch (error) {
       console.log('Register error:', error?.response?.data || error.message);
     
       if (error.response?.status === 400) {
-        Alert.alert('שגיאה', 'המשתמש כבר קיים או שהנתונים שגויים');
+        Alert.alert('Error', 'User already exists or invalid data');
       } else {
-        Alert.alert('שגיאה', 'שגיאה בשרת, נסה שוב מאוחר יותר');
+        Alert.alert('Error', 'Server error, please try again later');
       }
-    }finally {
       setLoading(false);
     }
   };

@@ -17,6 +17,8 @@ exports.authenticate = (req, res, next) => {
 exports.requireManager = async (req, res, next) => {
   try {
     const isMgr = await Manager.exists({ user: req.user.id });
+    console.log(req.user.id);
+    
     if (!isMgr) return res.status(403).json({ message: 'אין הרשאת מנהל' });
     next();
   } catch {

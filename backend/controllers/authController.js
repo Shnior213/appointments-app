@@ -1,29 +1,28 @@
-const User = require('../models/User')
+const User = require('../models/user')
 const Manager = require('../models/Manager');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const createInitialAdmin = async () => {
-    const adminExists = await User.findOne({ role: 'admin' });
-    if (!adminExists) {
-        const hash = await bcrypt.hash('000', 10);
-        const user = await User.create({
-            name: 'Admin',
-            phone: '000',
-            password: hash,
-            role: 'admin'
-        });
-        await Manager.create({ user: user._id });
-        console.log('Admin user created');
-    }
-};
+// const createInitialAdmin = async () => {
+//     const adminExists = await User.findOne({ role: 'admin' });
+//     if (!adminExists) {
+//         const hash = await bcrypt.hash('000', 10);
+//         const user = await User.create({
+//             name: 'Admin',
+//             phone: '000',
+//             password: hash,
+//             role: 'admin'
+//         });
+//         await Manager.create({ user: user._id });
+//         console.log('Admin user created');
+//     }
+// };
 // createInitialAdmin(); 
 
 
-// מחזיר את כל המשתמשים
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find();  // תוכל להוסיף select כדי להחזיר רק שדות מסוימים אם תרצה
+    const users = await User.find();  
     res.send(users);
   } catch (err) {
     res.status(500).send({ error: 'Failed to fetch users' });
@@ -45,7 +44,6 @@ exports.login = async (req, res) => {
     const { phone, password } = req.body;
     try {
         const user = await User.findOne({ phone });
-        // console.log(" user.name = ", user.name);
         if (!user || !await bcrypt.compare(password, user.password)) {
             return res.status(401).json({ message: 'פרטי התחברות שגויים' });
         }

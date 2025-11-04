@@ -22,7 +22,6 @@ export default function SetWorkHoursScreen() {
         const res = await API.get('/api/work-hours');
         const workHours = res.data;
 
-        // Map the response to the hours state format
         const mappedHours = {};
         workHours.forEach(({ day, open, close }) => {
           mappedHours[day] = { open, close };

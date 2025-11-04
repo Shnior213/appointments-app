@@ -38,11 +38,7 @@ useEffect(() => {
 
       const selectedDay = selectedDate.getDay(); 
 
-      // console.log('Fetched workHours:', workHours);
-      // console.log('Selected day index:', selectedDay);
-
       const todayHours = workHours.find(hour => Number(hour.dayOfWeek) === selectedDay);
-      // console.log('Matched todayHours:', todayHours);
 
       if (!todayHours || !todayHours.from || !todayHours.to) {
         setAvailableTimes([]);
@@ -68,7 +64,6 @@ useEffect(() => {
         }
       }
 
-      // console.log('Generated available times:', times);
 
       const now = new Date();
       const isToday = selectedDate.toDateString() === now.toDateString();
@@ -82,14 +77,12 @@ useEffect(() => {
 
       setAvailableTimes(filteredTimes);
 
-      // שלב א: קבל את כל התורים לאותו ספר וליום הנבחר
       const resAppointments = await API.get(`/api/appointments/manager/${staff._id}?date=${selectedDate.toISOString().split('T')[0]}`);
       const takenTimes = resAppointments.data.map(appt => {
         const apptDate = new Date(appt.dateTime);
-        return apptDate.toTimeString().slice(0, 5); // "HH:MM"
+        return apptDate.toTimeString().slice(0, 5); 
       });
 
-      // שלב ב: סנן את הזמנים שתפוסים
       const finalAvailableTimes = filteredTimes.filter(time => !takenTimes.includes(time));
 
       setAvailableTimes(finalAvailableTimes);

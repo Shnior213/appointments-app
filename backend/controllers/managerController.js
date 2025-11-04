@@ -1,13 +1,11 @@
 const Manager = require('../models/Manager');
-const User = require('../models/User');
+const User = require('../models/user');
 
-// list all managers
 exports.list = async (req, res) => {
     const list = await Manager.find().populate('user', 'name phone');
     res.json(list);
 };
 
-// create a manager (promote user)
 exports.create = async (req, res) => {
     const { userId, imageUrl } = req.body;
     try {
@@ -20,7 +18,6 @@ exports.create = async (req, res) => {
     }
 };
 
-// delete manager (demote)
 exports.delete = async (req, res) => {
     const { id } = req.params;
     const removed = await Manager.findOneAndDelete({ user: id });

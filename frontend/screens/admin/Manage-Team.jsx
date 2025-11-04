@@ -11,19 +11,14 @@ export default function ManageTeamScreen() {
   const [team, setTeam] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [users, setUsers] = useState([]);
-  // const [newMember, setNewMember] = useState({ name: '', phone: '', password: '', profileImage: ''});
   const [user, setUser] = useState(null);
 
-// Move fetchManagers outside useEffect so it can be called elsewhere
 const fetchManagers = async () => {
   try {
     const [managersRes, usersRes] = await Promise.all([
       API.get('/api/managers'),
       API.get('/api/auth/users'),
     ]);
-
-    // const managerUserIds = managersRes.data.map(manager => manager.user._id || manager.user);
-    // const managers = usersRes.data.filter(user => managerUserIds.includes(user._id));
 
     const managers = managersRes.data.map(manager => {
       const user = usersRes.data.find(user => user._id === (manager.user._id || manager.user));
@@ -48,7 +43,6 @@ useEffect(() => {
       if (showModal) {
         try {
           const res = await API.get('/api/auth/users');
-          // Filter out users who are already managers
           const managerUserIds = team.map(manager => manager._id);
           const nonManagers = res.data.filter(user => !managerUserIds.includes(user._id));
           setUsers(nonManagers);
@@ -75,7 +69,41 @@ useEffect(() => {
               await API.delete(`/api/managers/${id}`);
               setTeam(prev => prev.filter(member => member._id !== id));
             } catch (err) {
-              console.error('Failed to delete:', err);
+              console.error('Failed to delete:', err.response?.data);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteUser = (id) => {
+    Alert.alert(
+      'Delete User',
+      'Are you sure you want to delete this user completely? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const manager = team.find(member => member._id === id);
+              if (manager) {
+                try {
+                  await API.delete(`/api/managers/${manager.managerId}`);
+                } catch (err) {
+                  if (err.response && err.response.status === 404) {
+                  } else {
+                    throw err;
+                  }
+                }
+                setTeam(prev => prev.filter(member => member._id !== id));
+              }
+              await API.delete(`/api/auth/users/${id}`);
+              setUsers(prev => prev.filter(user => user._id !== id));
+            } catch (err) {
+              console.error('Failed to delete user:', err.response?.data);
             }
           },
         },
@@ -92,9 +120,11 @@ useEffect(() => {
           <Text style={styles.role}>manager</Text>
         </View>
       </View>
-      <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item._id)}>
-        <Text style={styles.deleteText}>Remove</Text>
-      </TouchableOpacity>
+      <View style={{flexDirection: 'row'}}>
+        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item._id)}>
+          <Text style={styles.deleteText}>Remove</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -134,7 +164,7 @@ useEffect(() => {
                   await fetchManagers();
                   setShowModal(false);
                 } catch (err) {
-                  console.error('Failed to promote user:', err);
+                  console.error('Failed to promote user:', err.response?.data);
                 }
               }}
             >

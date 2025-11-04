@@ -5,9 +5,8 @@ const Manager = require('../models/Manager');
 exports.list = async (req, res) => {
     let filter;
     if (req.user.isManager) {
-        // נמצא את מסמך ה-Manager ששייך למשתמש המחובר
         const mgr = await Manager.findOne({ user: req.user.id }, '_id');
-        if (!mgr) return res.json([]);            // אין מסמך מנהל – מחזירים ריק
+        if (!mgr) return res.json([]);           
         filter = { manager: mgr._id };
     } else {
         filter = { client: req.user.id };
@@ -44,7 +43,6 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
     const { id } = req.params;
-    // אם המשתמש מנהל – צריך להשיג את managerId שלו
     let managerFilter = null;
     if (req.user.isManager) {
         const mgr = await Manager.findOne({ user: req.user.id }, '_id');
@@ -78,7 +76,7 @@ exports.delete = async (req, res) => {
 exports.getByManagerAndDate = async (req, res) => {
     try {
         const { managerId } = req.params;
-        const { date } = req.query; // פורמט: YYYY-MM-DD
+        const { date } = req.query; 
 
         const from = new Date(date);
         const to = new Date(date);

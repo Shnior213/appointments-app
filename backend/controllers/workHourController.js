@@ -31,7 +31,6 @@ exports.create = async (req, res) => {
         for (const [day, { open, close }] of Object.entries(hours)) {
             const dayNumber = dayMap[day];
 
-            // Skip creation if either open or close is empty
             if (!open || !close) continue;
 
             const newHour = await WorkHour.create({
@@ -75,14 +74,12 @@ exports.delete = async (req, res) => {
     res.json({ message: 'נמחק בהצלחה' });
 };
 
-// שליפת זמינות לפי מזהה מנהל
 exports.getAvailabilityByManager = async (req, res) => {
     const managerId = req.params.id;
 
     try {
         const hours = await WorkHour.find({ manager: managerId });
 
-        // נביא גם טיפולים מטבלת המנהלים, אם קיימים
         const Manager = require('../models/Manager');
         const manager = await Manager.findById(managerId);
         const treatments = manager?.treatments || [];
