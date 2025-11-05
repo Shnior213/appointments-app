@@ -19,18 +19,16 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      const res = await API.post('/api/auth/register', { name, phone, password });
+      await API.post('/api/auth/send-code', { phone });
 
-      if (res.status === 201) {
-        try {
-          await API.post('/api/auth/send-code', { phone });
-        } catch (sendErr) {
-          Alert.alert('Error', 'Failed to send verification code');
-          setLoading(false);
-          return;
-        }
-
-        if (Alert.prompt) {
+      const handleVerification = () => {
+        let attempts = 0;
+        const verifyLoop = () => {
+          if (attempts >= 3) {
+            Alert.alert('Error', 'Too many incorrect attempts. Please request a new code.');
+            setLoading(false);
+            return;
+          }
           Alert.prompt(
             'Phone Verification',
             'Enter the verification code you received via SMS',
@@ -39,23 +37,94 @@ export default function RegisterScreen() {
                 text: 'Confirm',
                 onPress: async (code) => {
                   if (!code || code.length !== 4) {
-                    Alert.alert('Error', 'Please enter a 4-digit code');
+                    Alert.alert('Error', 'Please enter a 4-digit code', [
+                      { text: 'Try Again', onPress: () => verifyLoop() },
+                      { text: 'Resend Code', onPress: async () => {
+                        setLoading(true);
+                        try {
+                          await API.post('/api/auth/send-code', { phone });
+                          Alert.alert('Success', 'Verification code resent');
+                        } catch (err) {
+                          Alert.alert('Error', 'Failed to resend code. Please try again later.');
+                        }
+                        setLoading(false);
+                        attempts = 0;
+                        verifyLoop();
+                      }},
+                    ]);
                     setLoading(false);
                     return;
                   }
                   try {
                     const verifyRes = await API.post('/api/auth/verify', { phone, code });
                     if (verifyRes.status === 200) {
-                      Alert.alert('Success', 'Registration and verification completed successfully!', [
-                        { text: 'OK', onPress: () => navigation.navigate('Home') }
-                      ]);
+                      try {
+                        const res = await API.post('/api/auth/register', { name, phone, password });
+                        if (res.status === 201) {
+                          Alert.alert('Success', 'Registration and verification completed successfully!', [
+                            { text: 'OK', onPress: () => navigation.navigate('Home') }
+                          ]);
+                        } else {
+                          Alert.alert('Error', 'Registration failed');
+                        }
+                      } catch (regErr) {
+                        Alert.alert('Error', 'Registration failed');
+                      }
+                      setLoading(false);
                     } else {
-                      Alert.alert('Error', 'Incorrect code');
+                      attempts++;
+                      if (attempts >= 3) {
+                        Alert.alert('Error', 'Too many incorrect attempts. Please request a new code.');
+                        setLoading(false);
+                        return;
+                      }
+                      Alert.alert('Error', 'Incorrect code', [
+                        { text: 'Try Again', onPress: () => verifyLoop() },
+                        { text: 'Resend Code', onPress: async () => {
+                          setLoading(true);
+                          try {
+                            await API.post('/api/auth/send-code', { phone });
+                            Alert.alert('Success', 'Verification code resent');
+                          } catch (err) {
+                            Alert.alert('Error', 'Failed to resend code. Please try again later.');
+                          }
+                          setLoading(false);
+                          attempts = 0;
+                          verifyLoop();
+                        }},
+                      ]);
+                      setLoading(false);
                     }
                   } catch (err) {
-                    Alert.alert('Error', 'Incorrect code or server error');
+                    if (err.response?.status === 403) {
+                      Alert.alert('Error', 'Too many attempts. Your account was deleted. Please register again.');
+                    } else if (err.response?.status === 400) {
+                      attempts++;
+                      if (attempts >= 3) {
+                        Alert.alert('Error', 'Too many incorrect attempts. Please request a new code.');
+                        setLoading(false);
+                        return;
+                      }
+                      Alert.alert('Error', 'Incorrect code.', [
+                        { text: 'Try Again', onPress: () => verifyLoop() },
+                        { text: 'Resend Code', onPress: async () => {
+                          setLoading(true);
+                          try {
+                            await API.post('/api/auth/send-code', { phone });
+                            Alert.alert('Success', 'Verification code resent');
+                          } catch (err) {
+                            Alert.alert('Error', 'Failed to resend code. Please try again later.');
+                          }
+                          setLoading(false);
+                          attempts = 0;
+                          verifyLoop();
+                        }},
+                      ]);
+                    } else {
+                      Alert.alert('Error', 'Server error, please try again.');
+                    }
+                    setLoading(false);
                   }
-                  setLoading(false);
                 }
               }
             ],
@@ -63,23 +132,22 @@ export default function RegisterScreen() {
             '',
             'number-pad'
           );
-        } else {
-          let inputCode = '';
-          Alert.alert(
-            'Verification Required',
-            'Code input function is not supported on this device. Please contact support.'
-          );
-          setLoading(false);
-        }
+        };
+        verifyLoop();
+      };
+
+      if (Alert.prompt) {
+        handleVerification();
+      } else {
+        Alert.alert(
+          'Verification Required',
+          'Code input function is not supported on this device. Please contact support.'
+        );
+        setLoading(false);
       }
     } catch (error) {
-      console.log('Register error:', error?.response?.data || error.message);
-    
-      if (error.response?.status === 400) {
-        Alert.alert('Error', 'User already exists or invalid data');
-      } else {
-        Alert.alert('Error', 'Server error, please try again later');
-      }
+      console.log('Send code error:', error?.response?.data || error.message);
+      Alert.alert('Error', 'Failed to send verification code. Please try again later.');
       setLoading(false);
     }
   };

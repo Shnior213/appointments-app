@@ -33,7 +33,8 @@ exports.register = async (req, res) => {
     const { name, phone, password } = req.body;
     try {
         const hash = await bcrypt.hash(password, 10);
-        const user = await User.create({ name, phone, password: hash });
+        const user = await User.create({ name, phone, password: hash ,
+          isVerified: true,});
         res.status(201).json({ id: user._id });
     } catch (err) {
         res.status(400).json({ message: 'נתונים שגויים בהרשמה', error: err });

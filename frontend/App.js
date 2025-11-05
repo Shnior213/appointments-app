@@ -21,7 +21,7 @@ export default function App() {
       <SafeAreaProvider>
         <SafeAreaView style={{ flex: 1, backgroundColor: '#fff7f0' }} edges={['top', 'right', 'left']}>
           <NavigationContainer>
-            <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
+            <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false, animation: 'none' }}>
               <Stack.Screen name="Home" component={HomeScreen} />
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Register" component={RegisterScreen} />

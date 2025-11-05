@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, Linking, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Linking, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { decode as atob } from 'base-64';
@@ -43,10 +43,24 @@ export default function HomeScreen() {
     return 'Good evening';
   };
 
+  const handleMenuToggle = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        alert('You must log in or register to access the menu.');
+        return;
+      }
+      setMenuOpen(!menuOpen);
+    } catch (err) {
+      console.log('Error checking token', err);
+      alert('You must log in or register to access the menu.');
+    }
+  };
+
   return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
+          <TouchableOpacity onPress={handleMenuToggle}>
             <Text style={styles.menuButton}>≡</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Menu</Text>
